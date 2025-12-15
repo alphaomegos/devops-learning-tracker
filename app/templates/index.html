@@ -2,41 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>DevOps portfolio</title>
+  <title>Create a portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <h1>DevOps portfolio</h1>
+  <div class="page">
+    <header class="page-header">
+      <span class="app-tag">DevOps roadmap</span>
+      <h1 class="app-title">Create a portfolio</h1>
+      <p class="app-subtitle">
+        Plan your portfolio projects, break them into sub-tasks and track progress.
+      </p>
+    </header>
 
-  <!-- Form to add a new task with category -->
-  <form id="task-form">
-    <input type="text" id="task-input" placeholder="New learning task..." required>
-    <select id="task-category">
-      <option value="">General</option>
-      <option value="Docker">Docker</option>
-      <option value="Jenkins">Jenkins</option>
-      <option value="AWS">AWS</option>
-      <option value="Terraform">Terraform</option>
-      <option value="Monitoring">Monitoring</option>
-      <option value="Other">Other</option>
-    </select>
-    <button type="submit">Add</button>
-  </form>
+    <main class="card">
+      <section class="section">
+        <h2 class="section-title">Add a task</h2>
+        <form id="task-form" class="task-form">
+          <input
+            type="text"
+            id="task-input"
+            class="input-text"
+            placeholder="New portfolio task, e.g. Dockerize a full-stack app"
+            required
+          >
+          <select id="task-category" class="select">
+            <option value="">General</option>
+            <option value="Docker">Docker</option>
+            <option value="Jenkins">Jenkins</option>
+            <option value="AWS">AWS</option>
+            <option value="Terraform">Terraform</option>
+            <option value="Monitoring">Monitoring</option>
+            <option value="Other">Other</option>
+          </select>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+      </section>
 
-  <!-- Filter by category -->
-  <div>
-    <label for="category-filter">Filter by category:</label>
-    <select id="category-filter">
-      <option value="">All</option>
-      <option value="Docker">Docker</option>
-      <option value="Jenkins">Jenkins</option>
-      <option value="AWS">AWS</option>
-      <option value="Terraform">Terraform</option>
-      <option value="Monitoring">Monitoring</option>
-      <option value="Other">Other</option>
-    </select>
+      <section class="section section-tasks">
+        <div class="tasks-header">
+          <h2 class="section-title">Tasks</h2>
+          <div class="filter">
+            <label for="category-filter" class="filter-label">Category:</label>
+            <select id="category-filter" class="select select-sm">
+              <option value="">All</option>
+              <option value="Docker">Docker</option>
+              <option value="Jenkins">Jenkins</option>
+              <option value="AWS">AWS</option>
+              <option value="Terraform">Terraform</option>
+              <option value="Monitoring">Monitoring</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="task-list" class="task-list">
+          <!-- JS will render an ordered list here -->
+        </div>
+      </section>
+    </main>
   </div>
-
-  <ul id="task-list"></ul>
 
   <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>

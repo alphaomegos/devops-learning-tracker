@@ -1,4 +1,4 @@
-# DevOps Learning Tracker
+# DevOps Portfolio
 
 A small but realistic full-stack demo service used for planning and tracking steps to create a strong DevOps portfolio.
 
@@ -10,7 +10,6 @@ You can:
 - add new items and sub-tasks (e.g. "Dockerize app", "Set up Jenkins pipeline")
 - group them by category (Docker, Jenkins, AWS, Terraform, Monitoring)
 - track progress via checkmarks
-
 
 ---
 
