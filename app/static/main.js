@@ -1,4 +1,4 @@
-async function fetchTasks(categoryFilter) {
+async function fetchTasksRaw(categoryFilter) {
   let url = "/api/tasks";
   if (categoryFilter) {
     const params = new URLSearchParams({ category: categoryFilter });
@@ -6,33 +6,101 @@ async function fetchTasks(categoryFilter) {
   }
 
   const res = await fetch(url);
-  const tasks = await res.json();
-  const list = document.getElementById("task-list");
-  list.innerHTML = "";
+  return await res.json();
+}
 
-  tasks.forEach((task) => {
-    const li = document.createElement("li");
-
-    const mainSpan = document.createElement("span");
-    const categoryPrefix = task.category ? `[${task.category}] ` : "";
-    mainSpan.textContent =
-      categoryPrefix + task.title + (task.done ? " ✅" : "");
-    mainSpan.style.cursor = "pointer";
-    mainSpan.onclick = () => toggleTask(task.id);
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "✕";
-    deleteBtn.type = "button";
-    deleteBtn.style.marginLeft = "8px";
-    deleteBtn.onclick = (e) => {
-      e.stopPropagation(); // do not toggle 'done' on delete click
-      deleteTask(task.id);
-    };
-
-    li.appendChild(mainSpan);
-    li.appendChild(deleteBtn);
-    list.appendChild(li);
+function buildTaskTree(tasks) {
+  const map = new Map();
+  tasks.forEach((t) => {
+    map.set(t.id, {
+      ...t,
+      children: [],
+    });
   });
+
+  const roots = [];
+
+  map.forEach((task) => {
+    if (task.parent_id && map.has(task.parent_id)) {
+      const parent = map.get(task.parent_id);
+      parent.children.push(task);
+    } else {
+      roots.push(task);
+    }
+  });
+
+  const sortTree = (nodes) => {
+    nodes.sort((a, b) => a.id - b.id);
+    nodes.forEach((n) => sortTree(n.children));
+  };
+
+  sortTree(roots);
+  return roots;
+}
+
+function renderTaskTree(rootTasks) {
+  const container = document.getElementById("task-list");
+  container.innerHTML = "";
+
+  const ol = document.createElement("ol");
+  rootTasks.forEach((task, index) => {
+    const prefix = String(index + 1); // "1", "2", ...
+    const li = createTaskElement(task, prefix);
+    ol.appendChild(li);
+  });
+
+  container.appendChild(ol);
+}
+
+function createTaskElement(task, prefix) {
+  const li = document.createElement("li");
+
+  const mainSpan = document.createElement("span");
+  const categoryPrefix = task.category ? `[${task.category}] ` : "";
+  mainSpan.textContent =
+    `${prefix}. ` +
+    categoryPrefix +
+    task.title +
+    (task.done ? " ✅" : "");
+  mainSpan.style.cursor = "pointer";
+  mainSpan.onclick = () => toggleTask(task.id);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "✕";
+  deleteBtn.type = "button";
+  deleteBtn.style.marginLeft = "8px";
+  deleteBtn.onclick = (e) => {
+    e.stopPropagation();
+    deleteTask(task.id);
+  };
+
+  const subtaskBtn = document.createElement("button");
+  subtaskBtn.textContent = "+ subtask";
+  subtaskBtn.type = "button";
+  subtaskBtn.style.marginLeft = "8px";
+  subtaskBtn.onclick = (e) => {
+    e.stopPropagation();
+    const title = window.prompt("Sub-task title:");
+    if (!title) return;
+    const category = task.category || "";
+    addTask(title, category, task.id);
+  };
+
+  li.appendChild(mainSpan);
+  li.appendChild(subtaskBtn);
+  li.appendChild(deleteBtn);
+
+  if (task.children && task.children.length > 0) {
+    const childOl = document.createElement("ol");
+    task.children.forEach((child, index) => {
+      const childPrefix = `${prefix}.${index + 1}`; // "1.1", "1.2", ...
+      const childLi = createTaskElement(child, childPrefix);
+      childOl.appendChild(childLi);
+    });
+    li.appendChild(childOl);
+  }
+
+  return li;
 }
 
 function getCurrentFilter() {
@@ -42,14 +110,21 @@ function getCurrentFilter() {
 
 async function refreshTasks() {
   const category = getCurrentFilter();
-  await fetchTasks(category);
+  const tasks = await fetchTasksRaw(category);
+  const tree = buildTaskTree(tasks);
+  renderTaskTree(tree);
 }
 
-async function addTask(title, category) {
+async function addTask(title, category, parentId = null) {
+  const payload = { title, category };
+  if (parentId) {
+    payload.parent_id = parentId;
+  }
+
   await fetch("/api/tasks", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, category }),
+    body: JSON.stringify(payload),
   });
   await refreshTasks();
 }
@@ -79,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const title = input.value.trim();
     if (!title) return;
     const category = categorySelect ? categorySelect.value : "";
-    addTask(title, category);
+    addTask(title, category, null);
     input.value = "";
   });
 

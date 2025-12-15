@@ -39,7 +39,7 @@ def init_db():
     conn = get_db_conn()
     try:
         with conn.cursor() as cur:
-            # Base table (old version might already exist)
+            # Base table
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS tasks (
@@ -49,9 +49,13 @@ def init_db():
                 );
                 """
             )
-            # New column for category
+            # Category column
             cur.execute(
                 "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT;"
+            )
+            # Parent task for hierarchy
+            cur.execute(
+                "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS parent_id INTEGER;"
             )
         conn.commit()
     finally:
@@ -67,6 +71,7 @@ def index():
 def get_tasks():
     """
     Optional filter: /api/tasks?category=Docker
+    Returns flat list with parent_id, frontend builds tree.
     """
     category = request.args.get("category", "").strip() or None
 
@@ -76,7 +81,7 @@ def get_tasks():
             if category:
                 cur.execute(
                     """
-                    SELECT id, title, done, category
+                    SELECT id, title, done, category, parent_id
                     FROM tasks
                     WHERE category = %s
                     ORDER BY id;
@@ -86,7 +91,7 @@ def get_tasks():
             else:
                 cur.execute(
                     """
-                    SELECT id, title, done, category
+                    SELECT id, title, done, category, parent_id
                     FROM tasks
                     ORDER BY id;
                     """
@@ -105,17 +110,18 @@ def add_task():
         return jsonify({"error": "Title is required"}), 400
 
     category = (data.get("category") or "").strip() or None
+    parent_id = data.get("parent_id")  # could be None
 
     conn = get_db_conn()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO tasks (title, done, category)
-                VALUES (%s, FALSE, %s)
-                RETURNING id, title, done, category;
+                INSERT INTO tasks (title, done, category, parent_id)
+                VALUES (%s, FALSE, %s, %s)
+                RETURNING id, title, done, category, parent_id;
                 """,
-                (title, category),
+                (title, category, parent_id),
             )
             row = cur.fetchone()
         conn.commit()
@@ -137,7 +143,7 @@ def toggle_task(task_id: int):
                 UPDATE tasks
                 SET done = NOT done
                 WHERE id = %s
-                RETURNING id, title, done, category;
+                RETURNING id, title, done, category, parent_id;
                 """,
                 (task_id,),
             )
@@ -155,11 +161,17 @@ def toggle_task(task_id: int):
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id: int):
     """
-    Delete a task.
+    Delete a task and its direct children.
     """
     conn = get_db_conn()
     try:
         with conn.cursor() as cur:
+            # subtasks first
+            cur.execute(
+                "DELETE FROM tasks WHERE parent_id = %s;",
+                (task_id,),
+            )
+            # than task itself
             cur.execute(
                 "DELETE FROM tasks WHERE id = %s RETURNING id;",
                 (task_id,),

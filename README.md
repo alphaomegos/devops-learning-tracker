@@ -1,9 +1,16 @@
 # DevOps Learning Tracker
 
-A small but realistic full-stack demo service used for my DevOps portfolio.
+A small but realistic full-stack demo service used for planning and tracking steps to create a strong DevOps portfolio.
 
-The application lets you track learning tasks (e.g. “Set up Jenkins pipeline”, “Deploy to AWS EC2”), mark them as done, and stores everything in a PostgreSQL database.  
+The application lets you plan portfolio items (Docker project, Jenkins pipeline, AWS deployment, Terraform infra, monitoring, etc.), break them down into sub-tasks, and track progress.
 It is designed to look and behave like a real microservice in a containerized environment.
+
+You can:
+- see the current portfolio tasks
+- add new items and sub-tasks (e.g. "Dockerize app", "Set up Jenkins pipeline")
+- group them by category (Docker, Jenkins, AWS, Terraform, Monitoring)
+- track progress via checkmarks
+
 
 ---
 
